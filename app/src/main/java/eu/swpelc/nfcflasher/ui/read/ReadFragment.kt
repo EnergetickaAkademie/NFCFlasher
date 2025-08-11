@@ -97,14 +97,11 @@ class ReadFragment : Fragment() {
             Log.d(TAG, "NDEF records count: ${ndefMessage.records.size}")
             if (ndefMessage.records.isNotEmpty()) {
                 val record = ndefMessage.records[0]
-                Log.d(TAG, "Processing record 0: $record")
+                val isTypeB = record.type.contentEquals("B".toByteArray(Charsets.US_ASCII))
+                val isTnfWellKnown = record.tnf == NdefRecord.TNF_WELL_KNOWN
 
-                // Robust check for MIME type could be added here if needed
-                // if (record.toMimeType() == "application/vnd.nfcflasher.buildingid")
-
-                if (record.payload.isNotEmpty()) {
+                if (isTypeB && isTnfWellKnown && record.payload.isNotEmpty()) {
                     val buildingByte = record.payload[0]
-                    Log.d(TAG, "Extracted byte: $buildingByte")
                     binding.textReadRawData.text = "Raw Data: 0x${buildingByte.toUByte().toString(16).padStart(2, '0').uppercase()}"
 
                     var foundBuildingType: BuildingType? = null
@@ -118,19 +115,16 @@ class ReadFragment : Fragment() {
                     }
 
                     if (foundBuildingType != null) {
-                        Log.i(TAG, "Found BuildingType (considering overrides): ${foundBuildingType.name}")
                         binding.textReadBuildingName.text = "Building: ${foundBuildingType.name}"
                         Toast.makeText(context, "Read: ${foundBuildingType.name}", Toast.LENGTH_LONG).show()
                     } else {
-                        Log.w(TAG, "Unknown building byte value (considering overrides): $buildingByte")
                         binding.textReadBuildingName.text = "Building: Unknown Value"
                         Toast.makeText(context, "Read unknown byte value: 0x${buildingByte.toUByte().toString(16).uppercase()}", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Log.w(TAG, "Record payload is empty.")
-                    binding.textReadRawData.text = "Raw Data: Empty payload"
+                    binding.textReadRawData.text = "Raw Data: Not a valid building tag"
                     binding.textReadBuildingName.text = "Building: -"
-                    Toast.makeText(context, "NDEF record payload is empty.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Tag is not a valid building type record.", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Log.w(TAG, "NDEF message contains no records.")

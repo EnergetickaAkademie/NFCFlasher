@@ -146,68 +146,56 @@ class WriteFragment : Fragment() {
         binding.spinnerBuildingType.adapter = adapter
     }
 
-    private fun writeNfcTag(tag: Tag, buildingType: BuildingType, valueToWrite: Byte) { // Added valueToWrite
-        val ndefRecord = NdefRecord(
-            NdefRecord.TNF_MIME_MEDIA, // TNF (Type Name Format)
-            CUSTOM_MIME_TYPE.toByteArray(Charset.forName("US-ASCII")), // Record Type
-            byteArrayOf(), // ID (optional, usually empty)
-            byteArrayOf(valueToWrite) // Payload (our single byte) - USE THE EFFECTIVE VALUE
+    private fun writeNfcTag(tag: Tag, buildingType: BuildingType, valueToWrite: Byte) {
+        val type = "B".toByteArray(Charsets.US_ASCII)      // record type = 'B'
+        val payload = byteArrayOf(valueToWrite)            // 1-byte payload
+
+        val record = NdefRecord(
+            NdefRecord.TNF_WELL_KNOWN,  // TNF not validated by your reader; SR will be set automatically
+            type,
+            ByteArray(0),
+            payload
         )
-        val ndefMessage = NdefMessage(arrayOf(ndefRecord))
+        val msg = NdefMessage(arrayOf(record))
 
-        val ndef = Ndef.get(tag)
-        if (ndef == null) {
-            Toast.makeText(context, "Tag does not support NDEF.", Toast.LENGTH_LONG).show()
-            sharedViewModel.tagProcessed() // Processed this attempt
-            return
-        }
-
-        var connectionLost = false
+        var processed = false
         try {
-            ndef.connect() // Attempt to connect
-
-            if (!ndef.isWritable) {
-                Toast.makeText(context, "Tag is not writable.", Toast.LENGTH_LONG).show()
-                // No need to call sharedViewModel.tagProcessed() here, finally block will do it
-                return // Exit early
-            }
-            if (ndef.maxSize < ndefMessage.toByteArray().size) {
-                Toast.makeText(context, "Tag storage is too small for this data.", Toast.LENGTH_LONG).show()
-                // No need to call sharedViewModel.tagProcessed() here, finally block will do it
-                return // Exit early
-            }
-
-            ndef.writeNdefMessage(ndefMessage) // Attempt to write
-
-            // Updated Toast message to show what was actually written
-            val hexValueWritten = valueToWrite.toUByte().toString(16).padStart(2, '0').uppercase()
-            Toast.makeText(context, "Successfully wrote: ${buildingType.name} (0x$hexValueWritten)", Toast.LENGTH_LONG).show()
-            Log.i(TAG, "Successfully wrote ${buildingType.name} (0x$hexValueWritten) to NFC tag.")
-
-        } catch (e: SecurityException) {
-            connectionLost = true // Mark that the connection was likely lost or tag stale
-            Log.e(TAG, "SecurityException: Tag out of date or permission issue.", e)
-            Toast.makeText(context, "NFC Tag connection lost. Please remove and re-tap the tag.", Toast.LENGTH_LONG).show()
-        } catch (e: IOException) {
-            Log.e(TAG, "IOException while writing NDEF message", e)
-            Toast.makeText(context, "Write failed: ${e.message}", Toast.LENGTH_LONG).show()
-        } catch (e: FormatException) {
-            Log.e(TAG, "FormatException while writing NDEF message", e)
-            Toast.makeText(context, "Write failed: Malformed NDEF message.", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected exception while writing NDEF message", e)
-            Toast.makeText(context, "Write failed: An unexpected error occurred.", Toast.LENGTH_LONG).show()
-        } finally {
-            // Only try to close if ndef is not null and was connected,
-            // and a SecurityException (implying stale tag) didn't already occur during connect/write.
-            if (ndef != null && ndef.isConnected && !connectionLost) {
-                try {
-                    ndef.close()
-                } catch (e: IOException) {
-                    Log.e(TAG, "IOException while closing NDEF connection", e)
+            // Try NDEF first
+            Ndef.get(tag)?.use { ndef ->
+                ndef.connect()
+                if (!ndef.isWritable) {
+                    Toast.makeText(context, "Tag is not writable.", Toast.LENGTH_LONG).show()
+                    return
+                }
+                if (ndef.maxSize < msg.toByteArray().size) {
+                    Toast.makeText(context, "Tag storage too small.", Toast.LENGTH_LONG).show()
+                    return
+                }
+                ndef.writeNdefMessage(msg)
+                processed = true
+            } ?: run {
+                // If not already NDEF, try to format
+                val fmt = android.nfc.tech.NdefFormatable.get(tag)
+                if (fmt != null) {
+                    fmt.connect()
+                    fmt.format(msg) // formats and writes TLV + message + FE
+                    fmt.close()
+                    processed = true
+                } else {
+                    Toast.makeText(context, "Tag doesn’t support NDEF.", Toast.LENGTH_LONG).show()
                 }
             }
-            sharedViewModel.tagProcessed() // Notify ViewModel that this tag interaction attempt is done
+
+            if (processed) {
+                val hex = valueToWrite.toUByte().toString(16).padStart(2, '0').uppercase()
+                Toast.makeText(context, "Wrote ${buildingType.name} (0x$hex)", Toast.LENGTH_LONG).show()
+                Log.i(TAG, "Wrote type=B payload=0x$hex")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Write failed", e)
+            Toast.makeText(context, "Write failed: ${e.message}", Toast.LENGTH_LONG).show()
+        } finally {
+            sharedViewModel.tagProcessed()
         }
     }
 
