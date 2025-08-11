@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color> <!-- Will be unused -->
+    <color name="purple_500">#FF6200EE</color> <!-- Will be unused -->
+    <color name="purple_700">#FF3700B3</color> <!-- Will be unused -->
+    <color name="teal_200">#FF03DAC5</color> <!-- Will be unused -->
+    <color name="teal_700">#FF018786</color> <!-- Will be unused -->
+    
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="dark_red_500">#B71C1C</color> <!-- New Primary Color -->
+    <color name="dark_red_700">#870000</color> <!-- New Primary Variant (Darker) -->
+    <color name="dark_red_200">#F05545</color> <!-- New Primary Light (Optional, can be used for accents) -->
+
+    <!-- For Secondary, let's pick a contrasting or analogous color.
+         If we want to keep it simple and focus on red/black, we can use shades of gray or keep it minimal.
+         For now, let's use a slightly off-black or dark gray for secondary elements if needed,
+         or we can just make secondary the same as primary if the design is simple.
+         Let's try a dark gray for now. -->
+    <color name="dark_gray">#424242</color>
+</resources>

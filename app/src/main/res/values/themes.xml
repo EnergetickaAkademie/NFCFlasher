@@ -1,0 +1,39 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.NFCFlasher" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/dark_red_500</item>
+        <item name="colorPrimaryVariant">@color/dark_red_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/dark_red_200</item> <!-- Using a lighter red for accents -->
+        <item name="colorOnSecondary">@color/black</item> <!-- Text on lighter red accent -->
+        
+        <!-- Background color -->
+        <item name="android:colorBackground">@color/black</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="colorSurface">@color/black</item> <!-- Surface colors for cards, sheets, menus -->
+        <item name="colorOnSurface">@color/white</item> <!-- Text on black surface -->
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/white</item>
+
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <!-- Customize your theme here. -->
+    </style>
+
+    <style name="Theme.NFCFlasher.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- Consider theming the AppBarOverlay to match if using a dark theme -->
+    <style name="Theme.NFCFlasher.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <item name="colorPrimary">@color/dark_red_500</item>
+        <item name="colorOnPrimarySurface">@color/white</item> <!-- Text on app bar -->
+    </style>
+
+    <style name="Theme.NFCFlasher.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light">
+        <!-- You might want to create a dark popup theme if needed -->
+    </style>
+</resources>

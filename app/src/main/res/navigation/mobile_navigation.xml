@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_read_nfc">
+
+    <fragment
+        android:id="@+id/nav_read_nfc"
+        android:name="eu.swpelc.nfcflasher.ui.read.ReadFragment"
+        android:label="@string/title_read_nfc"
+        tools:layout="@layout/fragment_read" />
+
+    <fragment
+        android:id="@+id/nav_write_nfc"
+        android:name="eu.swpelc.nfcflasher.ui.write.WriteFragment"
+        android:label="@string/title_write_nfc"
+        tools:layout="@layout/fragment_write" />
+
+    <fragment
+        android:id="@+id/nav_config"
+        android:name="eu.swpelc.nfcflasher.ui.config.ConfigFragment"
+        android:label="@string/title_config"
+        tools:layout="@layout/fragment_config" />
+
+</navigation>
