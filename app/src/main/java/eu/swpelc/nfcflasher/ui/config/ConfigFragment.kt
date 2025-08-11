@@ -66,7 +66,7 @@ class ConfigFragment : Fragment() {
                 .setMessage("Are you sure you want to reset all building values to their defaults? This cannot be undone.")
                 .setPositiveButton("Reset All") { _, _ ->
                     viewModel.resetAllToDefaults()
-                    Toast.makeText(context, "All configurations reset to defaults", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "All configurations reset to defaults", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -89,7 +89,7 @@ class ConfigFragment : Fragment() {
                     val newValueInt = newValueString.toInt()
                     if (newValueInt in 0..255) {
                         viewModel.updateBuildingValue(item.typeName, newValueInt.toByte())
-                        Toast.makeText(context, "${item.typeName} updated to $newValueInt", Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(context, "${item.typeName} updated to $newValueInt", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(context, "Value must be between 0 and 255", Toast.LENGTH_LONG).show()
                     }
@@ -104,7 +104,7 @@ class ConfigFragment : Fragment() {
                     .setMessage("Reset ${item.typeName} to its default value (${item.defaultValue})?")
                     .setPositiveButton("Reset") { _, _ ->
                         viewModel.resetBuildingValue(item.typeName)
-                        Toast.makeText(context, "${item.typeName} reset to default", Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(context, "${item.typeName} reset to default", Toast.LENGTH_SHORT).show()
                     }
                     .setNegativeButton("Cancel", null)
                     .show()

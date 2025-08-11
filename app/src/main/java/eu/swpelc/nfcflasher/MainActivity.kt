@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
 
             if (tag != null) {
                 Log.i(TAG, "NFC Tag detected: $tag")
-                Toast.makeText(this, "NFC Tag Detected!", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "NFC Tag Detected!", Toast.LENGTH_SHORT).show()
                 sharedViewModel.setNfcTag(tag)
                 // Log after calling setNfcTag
                 Log.d(TAG, "Called sharedViewModel.setNfcTag with Tag: ${tag.toString()}")
