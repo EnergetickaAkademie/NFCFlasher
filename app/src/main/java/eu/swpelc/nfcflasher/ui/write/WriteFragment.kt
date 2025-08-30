@@ -62,6 +62,8 @@ class WriteFragment : Fragment() {
                 isContinuousWriteActive = false
                 buildingTypeForContinuousWrite = null
                 valueForContinuousWrite = null
+                sharedViewModel.setWriteActive(false)
+                sharedViewModel.setWriteSelection(null, null)
                 // Toast.makeText(context, "Continuous write stopped.", Toast.LENGTH_SHORT).show() // Using updateUIState for status
             } else {
                 val selectedItem = binding.spinnerBuildingType.selectedItem
@@ -72,23 +74,51 @@ class WriteFragment : Fragment() {
                 buildingTypeForContinuousWrite = selectedItem as BuildingType
                 valueForContinuousWrite = configRepository.getCustomValue(buildingTypeForContinuousWrite!!) ?: buildingTypeForContinuousWrite!!.byteValue
                 isContinuousWriteActive = true
+                sharedViewModel.setWriteActive(true)
+                sharedViewModel.setWriteSelection(buildingTypeForContinuousWrite!!.name, valueForContinuousWrite)
                 // Toast.makeText(context, "Continuous write started for ${buildingTypeForContinuousWrite!!.name}.", Toast.LENGTH_SHORT).show() // Using updateUIState for status
             }
             updateUIState()
         }
 
         sharedViewModel.nfcTag.observe(viewLifecycleOwner) { tag ->
+            Log.d(TAG, "WriteFragment observer triggered. Tag: ${tag?.toString()}")
             if (tag != null) {
                 if (isContinuousWriteActive && buildingTypeForContinuousWrite != null && valueForContinuousWrite != null) {
                     Log.i(TAG, "Continuous write mode: Attempting to write ${buildingTypeForContinuousWrite!!.name} (Value: 0x${valueForContinuousWrite!!.toUByte().toString(16).uppercase()}) to tag.")
                     writeNfcTag(tag, buildingTypeForContinuousWrite!!, valueForContinuousWrite!!)
                 } else {
-                    Log.d(TAG, "Tag detected but continuous write not active or type/value not set. Tag processed.")
-                    sharedViewModel.tagProcessed()
+                    Log.d(TAG, "Tag detected but continuous write not active.")
+                    Toast.makeText(context, "Please start continuous write mode first.", Toast.LENGTH_SHORT).show()
+                    // Clear tag but keep write UI state persisted
+                    sharedViewModel.setNfcTag(null)
                 }
             } else {
                 Log.d(TAG, "NFC Tag became null in WriteFragment.")
             }
+        }
+
+        // Restore persisted write UI state
+        sharedViewModel.writeActive.observe(viewLifecycleOwner) { active ->
+            isContinuousWriteActive = active ?: false
+            updateUIState()
+        }
+        sharedViewModel.writeSelectedTypeName.observe(viewLifecycleOwner) { name ->
+            name?.let { typeName ->
+                // restore spinner selection
+                val adapter = binding.spinnerBuildingType.adapter
+                for (i in 0 until (adapter?.count ?: 0)) {
+                    val item = adapter?.getItem(i) as? BuildingType
+                    if (item?.name == typeName) {
+                        binding.spinnerBuildingType.setSelection(i)
+                        buildingTypeForContinuousWrite = item
+                        break
+                    }
+                }
+            }
+        }
+        sharedViewModel.writeSelectedValue.observe(viewLifecycleOwner) { value ->
+            valueForContinuousWrite = value
         }
     }
 

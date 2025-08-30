@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
+import android.nfc.tech.NdefFormatable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -80,19 +81,22 @@ class MainActivity : AppCompatActivity() {
         // Define intent filters
         val ndefIntentFilter = IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED).apply {
             try {
-                // Assuming your custom data type is text/plain for simplicity now
-                // or a more specific one if you defined it.
-                // addDataType("text/plain")
-                // addDataType("application/vnd.nfcflasher.buildingid") // If using custom MIME
-                addDataType("*/*") // Broad for now to catch more tags during debug
+                // Add support for our custom MIME type and general NDEF
+                addDataType("application/vnd.nfcflasher.buildingid")
+                addDataType("*/*") // Broad catch for debugging
             } catch (e: IntentFilter.MalformedMimeTypeException) {
                 Log.e(TAG, "Malformed Mime type for NDEF", e)
                 throw RuntimeException("Failed to add NDEF MIME type.", e)
             }
         }
         val techIntentFilter = IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
-        nfcIntentFilters = arrayOf(ndefIntentFilter, techIntentFilter)
-        nfcTechLists = arrayOf(arrayOf(Ndef::class.java.name))
+        val tagIntentFilter = IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
+        nfcIntentFilters = arrayOf(ndefIntentFilter, techIntentFilter, tagIntentFilter)
+        // Support both NDEF and NdefFormatable tags (for blank/unformatted tags)
+        nfcTechLists = arrayOf(
+            arrayOf(Ndef::class.java.name),
+            arrayOf(NdefFormatable::class.java.name)
+        )
     }
 
     override fun onResume() {

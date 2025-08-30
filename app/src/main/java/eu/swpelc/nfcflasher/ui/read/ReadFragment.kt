@@ -47,11 +47,24 @@ class ReadFragment : Fragment() {
 
         sharedViewModel.nfcTag.observe(viewLifecycleOwner) { tag ->
             Log.d(TAG, "Observer triggered. Tag: ${tag?.toString()}")
-            tag?.let {
-                Log.d(TAG, "processNfcTag called with Tag: ${it.toString()}")
-                processNfcTag(it)
-                sharedViewModel.tagProcessed() // Notify ViewModel that tag has been handled
+            if (tag != null) {
+                Log.d(TAG, "processNfcTag called with Tag: ${tag.toString()}")
+                processNfcTag(tag)
+                // Do not clear persisted read immediately; keep last value for rotation
+                sharedViewModel.setNfcTag(null)
+            } else {
+                Log.d(TAG, "Tag is null in observer")
             }
+        }
+
+        // Restore last read values on rotation
+        sharedViewModel.lastReadByte.observe(viewLifecycleOwner) { byteVal ->
+            if (byteVal != null) {
+                binding.textReadRawData.text = "Raw Data: 0x${byteVal.toUByte().toString(16).padStart(2, '0').uppercase()}"
+            }
+        }
+        sharedViewModel.lastReadName.observe(viewLifecycleOwner) { name ->
+            binding.textReadBuildingName.text = name?.let { "Building: $it" } ?: "Building: -"
         }
     }
 
@@ -111,10 +124,13 @@ class ReadFragment : Fragment() {
                             Log.i(TAG, "Found BuildingType (considering overrides): ${foundBuildingType.name}")
                             binding.textReadBuildingName.text = "Building: ${foundBuildingType.name}"
                             Toast.makeText(context, "Read: ${foundBuildingType.name}", Toast.LENGTH_LONG).show()
+                            // Persist read result in shared viewmodel
+                            sharedViewModel.setLastRead(byteVal = buildingByte, name = foundBuildingType.name)
                         } else {
                             Log.w(TAG, "Unknown building byte value (considering overrides): $buildingByte")
                             binding.textReadBuildingName.text = "Building: Unknown Value"
                             Toast.makeText(context, "Read unknown byte value: 0x${buildingByte.toUByte().toString(16).uppercase()}", Toast.LENGTH_SHORT).show()
+                            sharedViewModel.setLastRead(byteVal = buildingByte, name = null)
                         }
                     } else {
                         Log.w(TAG, "Record 'B' type payload is empty.")

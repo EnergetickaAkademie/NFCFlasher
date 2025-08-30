@@ -3,4 +3,8 @@
     <tech-list>
         <tech>android.nfc.tech.Ndef</tech>
     </tech-list>
+    <!-- Support blank / unformatted tags that can be NDEF formatted -->
+    <tech-list>
+        <tech>android.nfc.tech.NdefFormatable</tech>
+    </tech-list>
 </resources>
