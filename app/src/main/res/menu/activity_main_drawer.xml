@@ -13,6 +13,10 @@
             android:icon="@android:drawable/ic_menu_edit"
             android:title="@string/title_write_nfc" /> <!-- Placeholder icon -->
         <item
+            android:id="@+id/nav_provision"
+            android:icon="@android:drawable/ic_lock_idle_lock"
+            android:title="@string/title_provision" />
+        <item
             android:id="@+id/nav_config"
             android:icon="@android:drawable/ic_menu_preferences"
             android:title="@string/title_config" /> <!-- Placeholder icon -->

@@ -18,6 +18,12 @@
         tools:layout="@layout/fragment_write" />
 
     <fragment
+        android:id="@+id/nav_provision"
+        android:name="eu.swpelc.nfcflasher.ui.provision.ProvisionFragment"
+        android:label="@string/title_provision"
+        tools:layout="@layout/fragment_provision" />
+
+    <fragment
         android:id="@+id/nav_config"
         android:name="eu.swpelc.nfcflasher.ui.config.ConfigFragment"
         android:label="@string/title_config"
