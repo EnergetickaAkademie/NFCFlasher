@@ -13,5 +13,6 @@
 
     <string name="title_read_nfc">Read NFC</string>
     <string name="title_write_nfc">Write NFC</string>
+    <string name="title_provision">Board provisioning</string>
     <string name="title_config">Configuration</string>
 </resources>
