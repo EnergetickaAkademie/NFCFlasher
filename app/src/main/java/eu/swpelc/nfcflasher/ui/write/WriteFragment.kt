@@ -4,7 +4,6 @@ import android.content.Context
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.Tag
-import android.nfc.FormatException // Keep this, might be used by NdefFormatable indirectly or in other catches
 import android.nfc.tech.Ndef
 import android.nfc.tech.NdefFormatable // Required for the new writeNfcTag
 import android.os.Bundle
@@ -20,9 +19,8 @@ import androidx.fragment.app.activityViewModels
 import eu.swpelc.nfcflasher.BuildingType
 import eu.swpelc.nfcflasher.data.ConfigRepository
 import eu.swpelc.nfcflasher.databinding.FragmentWriteBinding
+import eu.swpelc.nfcflasher.nfc.EnakNfcProtocol
 import eu.swpelc.nfcflasher.viewmodel.SharedViewModel
-import java.io.IOException // Keep this for other catches
-import java.nio.charset.Charset // Required by new writeNfcTag if it uses Charsets.US_ASCII internally
 
 class WriteFragment : Fragment() {
 
@@ -72,7 +70,17 @@ class WriteFragment : Fragment() {
                     return@setOnClickListener
                 }
                 buildingTypeForContinuousWrite = selectedItem as BuildingType
-                valueForContinuousWrite = configRepository.getCustomValue(buildingTypeForContinuousWrite!!) ?: buildingTypeForContinuousWrite!!.byteValue
+                val selectedValue = configRepository.getCustomValue(buildingTypeForContinuousWrite!!)
+                    ?: buildingTypeForContinuousWrite!!.byteValue
+                if (selectedValue.toUByte().toInt() !in 0..EnakNfcProtocol.MAX_BUILDING_TYPE) {
+                    Toast.makeText(
+                        context,
+                        "Building value must be between 0 and ${EnakNfcProtocol.MAX_BUILDING_TYPE}.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@setOnClickListener
+                }
+                valueForContinuousWrite = selectedValue
                 isContinuousWriteActive = true
                 sharedViewModel.setWriteActive(true)
                 sharedViewModel.setWriteSelection(buildingTypeForContinuousWrite!!.name, valueForContinuousWrite)
@@ -128,7 +136,8 @@ class WriteFragment : Fragment() {
             binding.buttonToggleContinuousWrite.text = "Stop Continuous Write"
             val typeName = buildingTypeForContinuousWrite?.name ?: "Unknown"
             val hexValue = valueForContinuousWrite?.toUByte()?.toString(16)?.padStart(2, '0')?.uppercase() ?: "XX"
-            binding.textViewWriteStatus.text = "Writing: $typeName (0x$hexValue)\nApproach tags to write."
+            val protocol = configRepository.getProtocolMode().displayName
+            binding.textViewWriteStatus.text = "Writing: $typeName (0x$hexValue) using $protocol\nApproach tags to write."
         } else {
             binding.spinnerBuildingType.isEnabled = true
             binding.buttonToggleContinuousWrite.text = "Start Continuous Write"
@@ -188,16 +197,14 @@ class WriteFragment : Fragment() {
         }
     }
 
-    // THIS IS YOUR NEW writeNfcTag FUNCTION
     private fun writeNfcTag(tag: Tag, buildingType: BuildingType, valueToWrite: Byte) {
-        val type = "B".toByteArray(Charsets.US_ASCII)      // record type = 'B'
-        val payload = byteArrayOf(valueToWrite)            // 1-byte payload
-
+        val protocolMode = configRepository.getProtocolMode()
+        val recordSpec = EnakNfcProtocol.createBuildingRecord(valueToWrite, protocolMode)
         val record = NdefRecord(
-            NdefRecord.TNF_WELL_KNOWN,  // TNF not validated by your reader; SR will be set automatically
-            type,
+            recordSpec.tnf,
+            recordSpec.type,
             ByteArray(0),
-            payload
+            recordSpec.payload
         )
         val msg = NdefMessage(arrayOf(record))
 
@@ -233,8 +240,12 @@ class WriteFragment : Fragment() {
 
             if (processed) {
                 val hex = valueToWrite.toUByte().toString(16).padStart(2, '0').uppercase()
-                Toast.makeText(context, "Wrote ${buildingType.name} (0x$hex)", Toast.LENGTH_LONG).show()
-                Log.i(TAG, "Wrote type=B payload=0x$hex")
+                Toast.makeText(
+                    context,
+                    "Wrote ${buildingType.name} (0x$hex) using ${protocolMode.displayName}",
+                    Toast.LENGTH_LONG
+                ).show()
+                Log.i(TAG, "Wrote ${buildingType.name} payload=0x$hex protocol=${protocolMode.name}")
             }
         } catch (e: Exception) { // Catch more specific exceptions if possible (IOException, FormatException)
             Log.e(TAG, "Write failed", e)

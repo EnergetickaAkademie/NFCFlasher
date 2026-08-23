@@ -1,7 +1,6 @@
 package eu.swpelc.nfcflasher.ui.read
 
 import android.nfc.NdefMessage
-import android.nfc.NdefRecord // Make sure NdefRecord is imported
 import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.os.Bundle
@@ -15,9 +14,9 @@ import androidx.fragment.app.activityViewModels
 import eu.swpelc.nfcflasher.BuildingType
 import eu.swpelc.nfcflasher.data.ConfigRepository
 import eu.swpelc.nfcflasher.databinding.FragmentReadBinding
+import eu.swpelc.nfcflasher.nfc.EnakNfcProtocol
 import eu.swpelc.nfcflasher.viewmodel.SharedViewModel
 import java.io.IOException
-import java.nio.charset.Charset // For comparing record type "B"
 
 class ReadFragment : Fragment() {
 
@@ -29,8 +28,6 @@ class ReadFragment : Fragment() {
 
     companion object {
         private const val TAG = "ReadFragmentNFC"
-        // Define expected type for TNF_WELL_KNOWN record
-        private val EXPECTED_RECORD_TYPE = "B".toByteArray(Charsets.US_ASCII)
     }
 
     override fun onCreateView(
@@ -66,6 +63,9 @@ class ReadFragment : Fragment() {
         sharedViewModel.lastReadName.observe(viewLifecycleOwner) { name ->
             binding.textReadBuildingName.text = name?.let { "Building: $it" } ?: "Building: -"
         }
+        sharedViewModel.lastReadProtocol.observe(viewLifecycleOwner) { protocol ->
+            binding.textReadProtocol.text = protocol?.let { "Protocol: $it" } ?: "Protocol: -"
+        }
     }
 
     private fun processNfcTag(tag: Tag) {
@@ -75,6 +75,7 @@ class ReadFragment : Fragment() {
             Log.w(TAG, "Tag does not support NDEF.")
             binding.textReadRawData.text = "Raw Data: Not NDEF"
             binding.textReadBuildingName.text = "Building: -"
+            binding.textReadProtocol.text = "Protocol: -"
             Toast.makeText(context, "Tag is not NDEF formatted.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -94,6 +95,7 @@ class ReadFragment : Fragment() {
                 val message = if (connectionLost) "Error reading NDEF message from tag." else "No NDEF message found on tag."
                 binding.textReadRawData.text = if (connectionLost) "Raw Data: Error reading tag" else "Raw Data: No NDEF message"
                 binding.textReadBuildingName.text = "Building: -"
+                binding.textReadProtocol.text = "Protocol: -"
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 return // NDEF close will be handled in finally
             }
@@ -102,52 +104,41 @@ class ReadFragment : Fragment() {
                 val record = ndefMessage.records[0]
                 Log.d(TAG, "Processing record 0: TNF=${record.tnf}, Type=${String(record.type, Charsets.US_ASCII)}, Payload Length=${record.payload.size}")
 
-                // Check for TNF_WELL_KNOWN and if the record type is "B"
-                if (record.tnf == NdefRecord.TNF_WELL_KNOWN && record.type.contentEquals(EXPECTED_RECORD_TYPE)) {
-                    if (record.payload.isNotEmpty()) {
-                        val buildingByte = record.payload[0] // Our data is the first byte
-                        binding.textReadRawData.text = "Raw Data: 0x${buildingByte.toUByte().toString(16).padStart(2, '0').uppercase()}"
-                        Log.d(TAG, "Extracted byte: $buildingByte from 'B' type record.")
+                val decoded = EnakNfcProtocol.decodeBuilding(record.tnf, record.type, record.payload)
+                if (decoded != null) {
+                    val buildingByte = decoded.buildingType
+                    val protocolName = decoded.protocolMode.displayName
+                    binding.textReadRawData.text = "Raw Data: 0x${buildingByte.toUByte().toString(16).padStart(2, '0').uppercase()}"
+                    binding.textReadProtocol.text = "Protocol: $protocolName"
 
-                        var foundBuildingType: BuildingType? = null
-                        // Iterate through all BuildingType enum entries to find a match with the effective value
-                        for (typeEntry in BuildingType.entries) {
-                            val customValue = configRepository.getCustomValue(typeEntry)
-                            val effectiveValue = customValue ?: typeEntry.byteValue // Check custom override first, then default
-                            if (effectiveValue == buildingByte) {
-                                foundBuildingType = typeEntry
-                                break // Found a match
-                            }
-                        }
+                    val foundBuildingType = BuildingType.entries.firstOrNull { typeEntry ->
+                        val customValue = configRepository.getCustomValue(typeEntry)
+                        (customValue ?: typeEntry.byteValue) == buildingByte
+                    }
 
-                        if (foundBuildingType != null) {
-                            Log.i(TAG, "Found BuildingType (considering overrides): ${foundBuildingType.name}")
-                            binding.textReadBuildingName.text = "Building: ${foundBuildingType.name}"
-                            Toast.makeText(context, "Read: ${foundBuildingType.name}", Toast.LENGTH_LONG).show()
-                            // Persist read result in shared viewmodel
-                            sharedViewModel.setLastRead(byteVal = buildingByte, name = foundBuildingType.name)
-                        } else {
-                            Log.w(TAG, "Unknown building byte value (considering overrides): $buildingByte")
-                            binding.textReadBuildingName.text = "Building: Unknown Value"
-                            Toast.makeText(context, "Read unknown byte value: 0x${buildingByte.toUByte().toString(16).uppercase()}", Toast.LENGTH_SHORT).show()
-                            sharedViewModel.setLastRead(byteVal = buildingByte, name = null)
-                        }
+                    if (foundBuildingType != null) {
+                        Log.i(TAG, "Found ${foundBuildingType.name} using $protocolName")
+                        binding.textReadBuildingName.text = "Building: ${foundBuildingType.name}"
+                        Toast.makeText(context, "Read: ${foundBuildingType.name} ($protocolName)", Toast.LENGTH_LONG).show()
+                        sharedViewModel.setLastRead(buildingByte, foundBuildingType.name, protocolName)
                     } else {
-                        Log.w(TAG, "Record 'B' type payload is empty.")
-                        binding.textReadRawData.text = "Raw Data: Empty 'B' payload"
-                        binding.textReadBuildingName.text = "Building: -"
-                        Toast.makeText(context, "NDEF 'B' record payload is empty.", Toast.LENGTH_SHORT).show()
+                        Log.w(TAG, "Unknown building byte value: $buildingByte")
+                        binding.textReadBuildingName.text = "Building: Unknown Value"
+                        Toast.makeText(context, "Read unknown byte value: 0x${buildingByte.toUByte().toString(16).uppercase()}", Toast.LENGTH_SHORT).show()
+                        sharedViewModel.setLastRead(buildingByte, null, protocolName)
                     }
                 } else {
-                    Log.w(TAG, "Record is not the expected 'B' type or TNF. TNF=${record.tnf}, Type=${String(record.type, Charsets.US_ASCII)}")
+                    Log.w(TAG, "Record is not a valid v2 or legacy building tag. TNF=${record.tnf}, Type=${String(record.type, Charsets.US_ASCII)}")
                     binding.textReadRawData.text = "Raw Data: Not a valid building tag"
                     binding.textReadBuildingName.text = "Building: -"
+                    binding.textReadProtocol.text = "Protocol: -"
                     Toast.makeText(context, "Tag does not contain valid building data.", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Log.w(TAG, "NDEF message contains no records.")
                 binding.textReadRawData.text = "Raw Data: No records in message"
                 binding.textReadBuildingName.text = "Building: -"
+                binding.textReadProtocol.text = "Protocol: -"
                 Toast.makeText(context, "NDEF message contains no records.", Toast.LENGTH_SHORT).show()
             }
         } catch (e: SecurityException) {
@@ -155,18 +146,21 @@ class ReadFragment : Fragment() {
             Log.e(TAG, "SecurityException: Tag out of date or permission issue.", e)
             binding.textReadRawData.text = "Raw Data: Tag Error"
             binding.textReadBuildingName.text = "Building: -"
+            binding.textReadProtocol.text = "Protocol: -"
             Toast.makeText(context, "NFC Tag connection lost. Please remove and re-tap the tag.", Toast.LENGTH_LONG).show()
         } catch (e: IOException) {
             connectionLost = true // Potentially, an IO error can also mean the tag is gone
             Log.e(TAG, "IOException while reading NDEF tag", e)
             binding.textReadRawData.text = "Raw Data: Error"
             binding.textReadBuildingName.text = "Building: -"
+            binding.textReadProtocol.text = "Protocol: -"
             Toast.makeText(context, "Error reading tag: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             connectionLost = true // Treat other exceptions as potentially losing the tag too
             Log.e(TAG, "Exception while reading NDEF tag", e)
             binding.textReadRawData.text = "Raw Data: Error"
             binding.textReadBuildingName.text = "Building: -"
+            binding.textReadProtocol.text = "Protocol: -"
             Toast.makeText(context, "An unexpected error occurred: ${e.message}", Toast.LENGTH_LONG).show()
         } finally {
             if (ndef.isConnected && !connectionLost) {

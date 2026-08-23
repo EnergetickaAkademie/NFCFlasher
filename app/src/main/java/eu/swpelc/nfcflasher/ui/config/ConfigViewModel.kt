@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import eu.swpelc.nfcflasher.BuildingType
 import eu.swpelc.nfcflasher.data.ConfigRepository
+import eu.swpelc.nfcflasher.nfc.ProtocolMode
 
 class ConfigViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -14,7 +15,11 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
     private val _configItems = MutableLiveData<List<BuildingConfigDisplayItem>>()
     val configItems: LiveData<List<BuildingConfigDisplayItem>> = _configItems
 
+    private val _protocolMode = MutableLiveData<ProtocolMode>()
+    val protocolMode: LiveData<ProtocolMode> = _protocolMode
+
     init {
+        _protocolMode.value = repository.getProtocolMode()
         loadConfiguration()
     }
 
@@ -46,5 +51,10 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
     fun resetAllToDefaults() {
         repository.resetAllToDefaults()
         loadConfiguration() // Reload
+    }
+
+    fun setProtocolMode(mode: ProtocolMode) {
+        repository.setProtocolMode(mode)
+        _protocolMode.value = mode
     }
 }

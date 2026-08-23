@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.recyclerview.widget.LinearLayoutManager
 import eu.swpelc.nfcflasher.databinding.FragmentConfigBinding // Assuming ViewBinding is enabled
+import eu.swpelc.nfcflasher.nfc.ProtocolMode
 
 class ConfigFragment : Fragment() {
 
@@ -56,9 +57,24 @@ class ConfigFragment : Fragment() {
                 configAdapter.submitList(it)
             }
         }
+        viewModel.protocolMode.observe(viewLifecycleOwner) { mode ->
+            binding.radioProtocolV2.isChecked = mode == ProtocolMode.V2
+            binding.radioProtocolLegacy.isChecked = mode == ProtocolMode.LEGACY_V1
+            binding.textProtocolDescription.text = when (mode) {
+                ProtocolMode.V2 -> "Writes versioned cz.enak external records. Updated mainboards require this mode."
+                ProtocolMode.LEGACY_V1 -> "Writes the previous formats for older mainboards. Updated mainboards reject these tags."
+            }
+        }
     }
 
     private fun setupListeners() {
+        binding.radioGroupProtocol.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                binding.radioProtocolV2.id -> viewModel.setProtocolMode(ProtocolMode.V2)
+                binding.radioProtocolLegacy.id -> viewModel.setProtocolMode(ProtocolMode.LEGACY_V1)
+            }
+        }
+
         binding.buttonResetAll.setOnClickListener {
             // Add a confirmation dialog before resetting all
             AlertDialog.Builder(requireContext())

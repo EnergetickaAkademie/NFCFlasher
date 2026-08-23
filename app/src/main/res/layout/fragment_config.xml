@@ -10,6 +10,39 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Tag Protocol"
+        android:textAppearance="?attr/textAppearanceHeadline6"
+        android:layout_marginBottom="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/radio_group_protocol"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/radio_protocol_v2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Protocol v2 (recommended)" />
+
+        <RadioButton
+            android:id="@+id/radio_protocol_legacy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Legacy v1" />
+    </RadioGroup>
+
+    <TextView
+        android:id="@+id/text_protocol_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:textAppearance="?attr/textAppearanceCaption" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="Building Type Configuration"
         android:textAppearance="?attr/textAppearanceHeadline6"
         android:layout_marginBottom="8dp"/>

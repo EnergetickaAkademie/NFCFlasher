@@ -28,7 +28,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Building: -"
-        android:textAppearance="?attr/textAppearanceBody1"/>
+		android:textAppearance="?attr/textAppearanceBody1"
+		android:layout_marginBottom="8dp"/>
+
+	<TextView
+		android:id="@+id/text_read_protocol"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="Protocol: -"
+		android:textAppearance="?attr/textAppearanceBody1"/>
 
 </LinearLayout>
-    

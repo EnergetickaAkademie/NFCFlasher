@@ -13,16 +13,18 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import eu.swpelc.nfcflasher.data.ConfigRepository
 import eu.swpelc.nfcflasher.databinding.FragmentProvisionBinding
+import eu.swpelc.nfcflasher.nfc.EnakNfcProtocol
+import eu.swpelc.nfcflasher.nfc.NfcRecordSpec
 import eu.swpelc.nfcflasher.viewmodel.SharedViewModel
-import java.io.ByteArrayOutputStream
-import java.util.zip.CRC32
 
 class ProvisionFragment : Fragment() {
 
     private var _binding: FragmentProvisionBinding? = null
     private val binding get() = _binding!!
     private val sharedViewModel: SharedViewModel by activityViewModels()
+    private lateinit var configRepository: ConfigRepository
 
     private var pendingMessage: NdefMessage? = null
     private var pendingDescription: String? = null
@@ -38,19 +40,28 @@ class ProvisionFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        configRepository = ConfigRepository(requireContext())
 
         binding.checkBoxOpenNetwork.setOnCheckedChangeListener { _, isChecked ->
             binding.editTextWifiPassword.isEnabled = !isChecked
         }
 
         binding.buttonPrepareReset.setOnClickListener {
-            val record = externalRecord(COMMAND_RECORD_TYPE, byteArrayOf(VERSION, RESET_BUILDINGS))
-            prepareMessage(NdefMessage(arrayOf(record)), "building reset card")
+            val mode = configRepository.getProtocolMode()
+            val record = EnakNfcProtocol.createResetRecord(mode).toNdefRecord()
+            prepareMessage(
+                NdefMessage(arrayOf(record)),
+                "${mode.displayName} building reset card"
+            )
         }
 
         binding.buttonPrepareWifi.setOnClickListener {
             createWifiRecord()?.let { record ->
-                prepareMessage(NdefMessage(arrayOf(record)), "Wi-Fi provisioning tag")
+                val mode = configRepository.getProtocolMode()
+                prepareMessage(
+                    NdefMessage(arrayOf(record)),
+                    "${mode.displayName} Wi-Fi provisioning tag"
+                )
             }
         }
 
@@ -62,12 +73,14 @@ class ProvisionFragment : Fragment() {
     }
 
     private fun createWifiRecord(): NdefRecord? {
-        val ssid = binding.editTextWifiSsid.text.toString().toByteArray(Charsets.UTF_8)
+        val ssidText = binding.editTextWifiSsid.text.toString()
+        val passwordText = binding.editTextWifiPassword.text.toString()
+        val ssid = ssidText.toByteArray(Charsets.UTF_8)
         val isOpen = binding.checkBoxOpenNetwork.isChecked
         val password = if (isOpen) {
             ByteArray(0)
         } else {
-            binding.editTextWifiPassword.text.toString().toByteArray(Charsets.UTF_8)
+            passwordText.toByteArray(Charsets.UTF_8)
         }
 
         if (ssid.isEmpty() || ssid.size > 32) {
@@ -79,30 +92,14 @@ class ProvisionFragment : Fragment() {
             return null
         }
 
-        val body = ByteArrayOutputStream().apply {
-            write(VERSION.toInt())
-            write(if (isOpen) SECURITY_OPEN else SECURITY_WPA)
-            write(ssid.size)
-            write(ssid)
-            write(password.size)
-            write(password)
-        }.toByteArray()
-
-        val checksum = CRC32().apply { update(body) }.value
-        val payload = ByteArrayOutputStream().apply {
-            write(body)
-            write((checksum ushr 24).toInt() and 0xff)
-            write((checksum ushr 16).toInt() and 0xff)
-            write((checksum ushr 8).toInt() and 0xff)
-            write(checksum.toInt() and 0xff)
-        }.toByteArray()
-
-        return externalRecord(WIFI_RECORD_TYPE, payload)
+        val mode = configRepository.getProtocolMode()
+        return EnakNfcProtocol.createWifiRecord(ssidText, passwordText, isOpen, mode)
+            .toNdefRecord()
     }
 
-    private fun externalRecord(type: String, payload: ByteArray) = NdefRecord(
-        NdefRecord.TNF_EXTERNAL_TYPE,
-        type.toByteArray(Charsets.US_ASCII),
+    private fun NfcRecordSpec.toNdefRecord() = NdefRecord(
+        tnf,
+        type,
         ByteArray(0),
         payload
     )
@@ -153,11 +150,5 @@ class ProvisionFragment : Fragment() {
 
     companion object {
         private const val TAG = "ProvisionFragmentNFC"
-        private const val COMMAND_RECORD_TYPE = "cz.enak:cmd"
-        private const val WIFI_RECORD_TYPE = "cz.enak:wifi"
-        private const val VERSION: Byte = 1
-        private const val RESET_BUILDINGS: Byte = 1
-        private const val SECURITY_OPEN = 0
-        private const val SECURITY_WPA = 1
     }
 }

@@ -22,6 +22,9 @@ class SharedViewModel : ViewModel() {
     private val _lastReadName = MutableLiveData<String?>()
     val lastReadName: LiveData<String?> = _lastReadName
 
+    private val _lastReadProtocol = MutableLiveData<String?>()
+    val lastReadProtocol: LiveData<String?> = _lastReadProtocol
+
     // Persisted write UI state
     private val _writeActive = MutableLiveData<Boolean>(false)
     val writeActive: LiveData<Boolean> = _writeActive
@@ -46,10 +49,11 @@ class SharedViewModel : ViewModel() {
     }
 
     // Helper to persist last read value
-    fun setLastRead(byteVal: Byte, name: String?) {
-        Log.d(TAG, "setLastRead called. byte=0x${byteVal.toUByte().toString(16)}, name=$name")
+    fun setLastRead(byteVal: Byte, name: String?, protocol: String) {
+        Log.d(TAG, "setLastRead called. byte=0x${byteVal.toUByte().toString(16)}, name=$name, protocol=$protocol")
         _lastReadByte.value = byteVal
         _lastReadName.value = name
+        _lastReadProtocol.value = protocol
     }
 
     // Helpers for write UI state

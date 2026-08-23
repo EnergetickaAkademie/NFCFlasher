@@ -3,6 +3,7 @@ package eu.swpelc.nfcflasher.data
 import android.content.Context
 import android.content.SharedPreferences
 import eu.swpelc.nfcflasher.BuildingType
+import eu.swpelc.nfcflasher.nfc.ProtocolMode
 
 class ConfigRepository(context: Context) {
 
@@ -13,6 +14,7 @@ class ConfigRepository(context: Context) {
     companion object {
         // Prefix to avoid key collisions if SharedPreferences is used for other things
         private const val VALUE_PREFIX = "config_value_"
+        private const val PROTOCOL_MODE_KEY = "protocol_mode"
     }
 
     /**
@@ -37,6 +39,15 @@ class ConfigRepository(context: Context) {
         val key = VALUE_PREFIX + buildingType.name
         // SharedPreferences doesn't have putByte, so we use putInt.
         sharedPreferences.edit().putInt(key, value.toInt()).commit()
+    }
+
+    fun getProtocolMode(): ProtocolMode {
+        val savedMode = sharedPreferences.getString(PROTOCOL_MODE_KEY, null)
+        return ProtocolMode.entries.firstOrNull { it.name == savedMode } ?: ProtocolMode.V2
+    }
+
+    fun setProtocolMode(mode: ProtocolMode) {
+        sharedPreferences.edit().putString(PROTOCOL_MODE_KEY, mode.name).apply()
     }
 
     /**
