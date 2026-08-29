@@ -12,11 +12,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import eu.swpelc.nfcflasher.BuildingType
+import eu.swpelc.nfcflasher.R
 import eu.swpelc.nfcflasher.data.ConfigRepository
 import eu.swpelc.nfcflasher.databinding.FragmentWriteBinding
 import eu.swpelc.nfcflasher.nfc.EnakNfcProtocol
@@ -155,20 +157,20 @@ class WriteFragment : Fragment() {
 
     private inner class BuildingTypeArrayAdapter(
         context: Context,
-        textViewResourceId: Int,
         private val buildingTypes: Array<BuildingType>
-    ) : ArrayAdapter<BuildingType>(context, textViewResourceId, buildingTypes) {
+    ) : ArrayAdapter<BuildingType>(context, R.layout.item_building_type, buildingTypes) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            return getCustomView(position, convertView, parent, false)
+            return getCustomView(position, convertView, parent)
         }
         override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-            return getCustomView(position, convertView, parent, true)
+            return getCustomView(position, convertView, parent)
         }
-        private fun getCustomView(position: Int, convertView: View?, parent: ViewGroup, isDropDownView: Boolean): View {
+        private fun getCustomView(position: Int, convertView: View?, parent: ViewGroup): View {
             val view = convertView ?: LayoutInflater.from(context).inflate(
-                if (isDropDownView) android.R.layout.simple_spinner_dropdown_item else android.R.layout.simple_spinner_item,
+                R.layout.item_building_type,
                 parent, false
             )
+            val imageView = view.findViewById<ImageView>(R.id.image_building_type)
             val textView = view.findViewById<TextView>(android.R.id.text1)
             val buildingType = getItem(position)
             if (buildingType != null && ::configRepository.isInitialized) {
@@ -177,8 +179,14 @@ class WriteFragment : Fragment() {
                 val hexValue = effectiveValue.toUByte().toString(16).padStart(2, '0').uppercase()
                 val overrideIndicator = if (customValue != null) " (overridden)" else ""
                 textView.text = "${buildingType.name} (0x$hexValue$overrideIndicator)"
+                imageView.setImageResource(buildingType.imageResId)
+                imageView.contentDescription = "Building: ${buildingType.name}"
             } else {
                 textView.text = buildingType?.name ?: "Unknown"
+                buildingType?.let {
+                    imageView.setImageResource(it.imageResId)
+                    imageView.contentDescription = "Building: ${it.name}"
+                }
             }
             return view
         }
@@ -186,8 +194,7 @@ class WriteFragment : Fragment() {
 
     private fun setupSpinner() {
         val buildingTypes = BuildingType.entries.toTypedArray()
-        val adapter = BuildingTypeArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, buildingTypes)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val adapter = BuildingTypeArrayAdapter(requireContext(), buildingTypes)
         binding.spinnerBuildingType.adapter = adapter
         buildingTypeForContinuousWrite?.let { lockedType ->
             val position = adapter.getPosition(lockedType)

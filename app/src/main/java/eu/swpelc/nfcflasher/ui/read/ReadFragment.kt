@@ -62,6 +62,9 @@ class ReadFragment : Fragment() {
         }
         sharedViewModel.lastReadName.observe(viewLifecycleOwner) { name ->
             binding.textReadBuildingName.text = name?.let { "Building: $it" } ?: "Building: -"
+            showBuildingImage(name?.let { buildingName ->
+                BuildingType.entries.firstOrNull { it.name == buildingName }
+            })
         }
         sharedViewModel.lastReadProtocol.observe(viewLifecycleOwner) { protocol ->
             binding.textReadProtocol.text = protocol?.let { "Protocol: $it" } ?: "Protocol: -"
@@ -70,6 +73,7 @@ class ReadFragment : Fragment() {
 
     private fun processNfcTag(tag: Tag) {
         Log.d(TAG, "Inside processNfcTag. Tag: ${tag.toString()}")
+        showBuildingImage(null)
         val ndef = Ndef.get(tag)
         if (ndef == null) {
             Log.w(TAG, "Tag does not support NDEF.")
@@ -118,6 +122,7 @@ class ReadFragment : Fragment() {
 
                     if (foundBuildingType != null) {
                         Log.i(TAG, "Found ${foundBuildingType.name} using $protocolName")
+                        showBuildingImage(foundBuildingType)
                         binding.textReadBuildingName.text = "Building: ${foundBuildingType.name}"
                         Toast.makeText(context, "Read: ${foundBuildingType.name} ($protocolName)", Toast.LENGTH_LONG).show()
                         sharedViewModel.setLastRead(buildingByte, foundBuildingType.name, protocolName)
@@ -174,6 +179,17 @@ class ReadFragment : Fragment() {
                 Log.d(TAG, "NDEF connection was lost or not closed due to prior error.")
             }
         }
+    }
+
+    private fun showBuildingImage(buildingType: BuildingType?) {
+        if (buildingType == null) {
+            binding.imageReadBuilding.visibility = View.GONE
+            return
+        }
+
+        binding.imageReadBuilding.setImageResource(buildingType.imageResId)
+        binding.imageReadBuilding.contentDescription = "Building: ${buildingType.name}"
+        binding.imageReadBuilding.visibility = View.VISIBLE
     }
 
     override fun onDestroyView() {
