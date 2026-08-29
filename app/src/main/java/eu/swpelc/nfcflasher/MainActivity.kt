@@ -10,7 +10,6 @@ import android.nfc.tech.NdefFormatable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.Menu
 import android.widget.Toast
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
@@ -136,11 +135,6 @@ class MainActivity : AppCompatActivity() {
                 Log.w(TAG, "Tag is null in onNewIntent")
             }
         }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main, menu)
-        return true
     }
 
     override fun onSupportNavigateUp(): Boolean {
