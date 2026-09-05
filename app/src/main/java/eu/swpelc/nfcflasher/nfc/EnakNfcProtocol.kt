@@ -29,6 +29,7 @@ object EnakNfcProtocol {
     private const val WIFI_RECORD_TYPE = "cz.enak:wifi"
     private const val LEGACY_BUILDING_RECORD_TYPE = "B"
     private const val RESET_BUILDINGS: Byte = 1
+    private const val ENTER_DEBUG: Byte = 2
     private const val SECURITY_OPEN = 0
     private const val SECURITY_WPA = 1
 
@@ -50,6 +51,12 @@ object EnakNfcProtocol {
     fun createResetRecord(mode: ProtocolMode): NfcRecordSpec = externalRecord(
         COMMAND_RECORD_TYPE,
         byteArrayOf(mode.versionByte, RESET_BUILDINGS)
+    )
+
+    /** Debug mode is supported only by the current protocol-v2 mainboard. */
+    fun createDebugRecord(): NfcRecordSpec = externalRecord(
+        COMMAND_RECORD_TYPE,
+        byteArrayOf(ProtocolMode.V2.versionByte, ENTER_DEBUG)
     )
 
     fun createWifiRecord(

@@ -55,6 +55,14 @@ class ProvisionFragment : Fragment() {
             )
         }
 
+        binding.buttonPrepareDebug.setOnClickListener {
+            val record = EnakNfcProtocol.createDebugRecord().toNdefRecord()
+            prepareMessage(
+                NdefMessage(arrayOf(record)),
+                "Protocol v2 debug card"
+            )
+        }
+
         binding.buttonPrepareWifi.setOnClickListener {
             createWifiRecord()?.let { record ->
                 val mode = configRepository.getProtocolMode()

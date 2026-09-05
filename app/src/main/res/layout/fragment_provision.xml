@@ -33,6 +33,26 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Debug card"
+            android:textAppearance="?attr/textAppearanceHeadline6" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Hold this card on a current mainboard for three seconds to start its local ENAK debug access point." />
+
+        <Button
+            android:id="@+id/button_prepare_debug"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Prepare debug card (v2)" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="Wi-Fi provisioning"
             android:textAppearance="?attr/textAppearanceHeadline6" />

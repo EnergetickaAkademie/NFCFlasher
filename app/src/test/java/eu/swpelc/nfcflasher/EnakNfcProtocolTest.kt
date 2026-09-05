@@ -37,6 +37,15 @@ class EnakNfcProtocolTest {
     }
 
     @Test
+    fun debugRecordAlwaysUsesV2CommandPayload() {
+        val record = EnakNfcProtocol.createDebugRecord()
+
+        assertEquals(EnakNfcProtocol.TNF_EXTERNAL_TYPE, record.tnf)
+        assertArrayEquals("cz.enak:cmd".toByteArray(), record.type)
+        assertArrayEquals(byteArrayOf(2, 2), record.payload)
+    }
+
+    @Test
     fun v2WifiPayloadIncludesVersionAndBigEndianCrc32() {
         val record = EnakNfcProtocol.createWifiRecord(
             "ENAK",
