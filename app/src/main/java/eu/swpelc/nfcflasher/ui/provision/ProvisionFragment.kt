@@ -63,6 +63,14 @@ class ProvisionFragment : Fragment() {
             )
         }
 
+        binding.buttonPrepareBulldozer.setOnClickListener {
+            val record = EnakNfcProtocol.createBulldozerRecord().toNdefRecord()
+            prepareMessage(
+                NdefMessage(arrayOf(record)),
+                "Protocol v2 bulldozer card"
+            )
+        }
+
         binding.buttonPrepareWifi.setOnClickListener {
             createWifiRecord()?.let { record ->
                 val mode = configRepository.getProtocolMode()

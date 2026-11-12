@@ -16,11 +16,14 @@ class SharedViewModel : ViewModel() {
     val nfcTag: LiveData<Tag?> = _nfcTag
 
     // Persisted read result so UI survives rotation
-    private val _lastReadByte = MutableLiveData<Byte?>()
-    val lastReadByte: LiveData<Byte?> = _lastReadByte
+    private val _lastReadRawData = MutableLiveData<String?>()
+    val lastReadRawData: LiveData<String?> = _lastReadRawData
 
-    private val _lastReadName = MutableLiveData<String?>()
-    val lastReadName: LiveData<String?> = _lastReadName
+    private val _lastReadTagName = MutableLiveData<String?>()
+    val lastReadTagName: LiveData<String?> = _lastReadTagName
+
+    private val _lastReadBuildingName = MutableLiveData<String?>()
+    val lastReadBuildingName: LiveData<String?> = _lastReadBuildingName
 
     private val _lastReadProtocol = MutableLiveData<String?>()
     val lastReadProtocol: LiveData<String?> = _lastReadProtocol
@@ -49,10 +52,11 @@ class SharedViewModel : ViewModel() {
     }
 
     // Helper to persist last read value
-    fun setLastRead(byteVal: Byte, name: String?, protocol: String) {
-        Log.d(TAG, "setLastRead called. byte=0x${byteVal.toUByte().toString(16)}, name=$name, protocol=$protocol")
-        _lastReadByte.value = byteVal
-        _lastReadName.value = name
+    fun setLastRead(rawData: String, tagName: String, protocol: String, buildingName: String? = null) {
+        Log.d(TAG, "setLastRead called. raw=$rawData, tag=$tagName, protocol=$protocol")
+        _lastReadRawData.value = rawData
+        _lastReadTagName.value = tagName
+        _lastReadBuildingName.value = buildingName
         _lastReadProtocol.value = protocol
     }
 

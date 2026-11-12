@@ -53,6 +53,26 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Bulldozer card"
+            android:textAppearance="?attr/textAppearanceHeadline6" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="After scanning this card, present building tags within ten seconds to remove them from the board." />
+
+        <Button
+            android:id="@+id/button_prepare_bulldozer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Prepare bulldozer card (v2)" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="Wi-Fi provisioning"
             android:textAppearance="?attr/textAppearanceHeadline6" />

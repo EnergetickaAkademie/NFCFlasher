@@ -19,6 +19,22 @@ data class DecodedBuilding(
     val protocolMode: ProtocolMode
 )
 
+enum class EnakTagKind(val displayName: String) {
+    BUILDING("Building"),
+    BUILDING_RESET("Building reset card"),
+    DEBUG("Debug card"),
+    BULLDOZER("Bulldozer card"),
+    WIFI("Wi-Fi provisioning tag"),
+    UNKNOWN_COMMAND("Unknown command card")
+}
+
+data class DecodedEnakTag(
+    val kind: EnakTagKind,
+    val protocolMode: ProtocolMode,
+    val payload: ByteArray,
+    val buildingType: Byte? = null
+)
+
 object EnakNfcProtocol {
     const val TNF_WELL_KNOWN: Short = 0x01
     const val TNF_EXTERNAL_TYPE: Short = 0x04
@@ -30,6 +46,7 @@ object EnakNfcProtocol {
     private const val LEGACY_BUILDING_RECORD_TYPE = "B"
     private const val RESET_BUILDINGS: Byte = 1
     private const val ENTER_DEBUG: Byte = 2
+    private const val BULLDOZER: Byte = 3
     private const val SECURITY_OPEN = 0
     private const val SECURITY_WPA = 1
 
@@ -57,6 +74,12 @@ object EnakNfcProtocol {
     fun createDebugRecord(): NfcRecordSpec = externalRecord(
         COMMAND_RECORD_TYPE,
         byteArrayOf(ProtocolMode.V2.versionByte, ENTER_DEBUG)
+    )
+
+    /** Bulldozer mode arms the mainboard to remove presented buildings briefly. */
+    fun createBulldozerRecord(): NfcRecordSpec = externalRecord(
+        COMMAND_RECORD_TYPE,
+        byteArrayOf(ProtocolMode.V2.versionByte, BULLDOZER)
     )
 
     fun createWifiRecord(
@@ -115,6 +138,43 @@ object EnakNfcProtocol {
         return null
     }
 
+    /** Decodes every ENAK record type understood by the flasher, not just buildings. */
+    fun decodeTag(tnf: Short, type: ByteArray, payload: ByteArray): DecodedEnakTag? {
+        decodeBuilding(tnf, type, payload)?.let { building ->
+            return DecodedEnakTag(
+                EnakTagKind.BUILDING,
+                building.protocolMode,
+                payload.copyOf(),
+                building.buildingType
+            )
+        }
+
+        if (tnf != TNF_EXTERNAL_TYPE) return null
+
+        val protocolMode = payload.firstOrNull()?.let(::protocolModeForVersion) ?: return null
+        if (type.contentEquals(COMMAND_RECORD_TYPE.toByteArray(Charsets.US_ASCII)) &&
+            payload.size == 2
+        ) {
+            val kind = when (payload[1]) {
+                RESET_BUILDINGS -> EnakTagKind.BUILDING_RESET
+                ENTER_DEBUG -> EnakTagKind.DEBUG
+                BULLDOZER -> EnakTagKind.BULLDOZER
+                else -> EnakTagKind.UNKNOWN_COMMAND
+            }
+            return DecodedEnakTag(kind, protocolMode, payload.copyOf())
+        }
+
+        if (type.contentEquals(WIFI_RECORD_TYPE.toByteArray(Charsets.US_ASCII))) {
+            return DecodedEnakTag(
+                EnakTagKind.WIFI,
+                protocolMode,
+                payload.copyOf()
+            )
+        }
+
+        return null
+    }
+
     private fun externalRecord(type: String, payload: ByteArray) = NfcRecordSpec(
         TNF_EXTERNAL_TYPE,
         type.toByteArray(Charsets.US_ASCII),
@@ -129,4 +189,7 @@ object EnakNfcProtocol {
 
     private fun isValidBuildingType(buildingType: Byte): Boolean =
         buildingType.toUByte().toInt() in 0..MAX_BUILDING_TYPE
+
+    private fun protocolModeForVersion(version: Byte): ProtocolMode? =
+        ProtocolMode.entries.firstOrNull { it.versionByte == version }
 }

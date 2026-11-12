@@ -34,10 +34,10 @@
         android:layout_marginBottom="8dp"/>
 
     <TextView
-        android:id="@+id/text_read_building_name"
+        android:id="@+id/text_read_tag_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Building: -"
+        android:text="Tag: -"
 		android:textAppearance="?attr/textAppearanceBody1"
 		android:layout_marginBottom="8dp"/>
 

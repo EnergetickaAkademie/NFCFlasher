@@ -1,6 +1,7 @@
 package eu.swpelc.nfcflasher
 
 import eu.swpelc.nfcflasher.nfc.EnakNfcProtocol
+import eu.swpelc.nfcflasher.nfc.EnakTagKind
 import eu.swpelc.nfcflasher.nfc.ProtocolMode
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -43,6 +44,15 @@ class EnakNfcProtocolTest {
         assertEquals(EnakNfcProtocol.TNF_EXTERNAL_TYPE, record.tnf)
         assertArrayEquals("cz.enak:cmd".toByteArray(), record.type)
         assertArrayEquals(byteArrayOf(2, 2), record.payload)
+    }
+
+    @Test
+    fun bulldozerRecordAlwaysUsesV2CommandPayload() {
+        val record = EnakNfcProtocol.createBulldozerRecord()
+
+        assertEquals(EnakNfcProtocol.TNF_EXTERNAL_TYPE, record.tnf)
+        assertArrayEquals("cz.enak:cmd".toByteArray(), record.type)
+        assertArrayEquals(byteArrayOf(2, 3), record.payload)
     }
 
     @Test
@@ -96,6 +106,54 @@ class EnakNfcProtocolTest {
                 EnakNfcProtocol.TNF_EXTERNAL_TYPE,
                 "cz.enak:building".toByteArray(),
                 byteArrayOf(2, 18)
+            )
+        )
+    }
+
+    @Test
+    fun tagDecoderRecognizesAdministrativeCards() {
+        val reset = EnakNfcProtocol.decodeTag(
+            EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+            "cz.enak:cmd".toByteArray(),
+            byteArrayOf(1, 1)
+        )
+        val debug = EnakNfcProtocol.decodeTag(
+            EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+            "cz.enak:cmd".toByteArray(),
+            byteArrayOf(2, 2)
+        )
+        val bulldozer = EnakNfcProtocol.decodeTag(
+            EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+            "cz.enak:cmd".toByteArray(),
+            byteArrayOf(2, 3)
+        )
+
+        assertEquals(EnakTagKind.BUILDING_RESET, reset?.kind)
+        assertEquals(ProtocolMode.LEGACY_V1, reset?.protocolMode)
+        assertEquals(EnakTagKind.DEBUG, debug?.kind)
+        assertEquals(EnakTagKind.BULLDOZER, bulldozer?.kind)
+    }
+
+    @Test
+    fun tagDecoderRecognizesWifiAndUnknownCommands() {
+        val wifi = EnakNfcProtocol.decodeTag(
+            EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+            "cz.enak:wifi".toByteArray(),
+            byteArrayOf(2, 1, 0)
+        )
+        val unknownCommand = EnakNfcProtocol.decodeTag(
+            EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+            "cz.enak:cmd".toByteArray(),
+            byteArrayOf(2, 99)
+        )
+
+        assertEquals(EnakTagKind.WIFI, wifi?.kind)
+        assertEquals(EnakTagKind.UNKNOWN_COMMAND, unknownCommand?.kind)
+        assertNull(
+            EnakNfcProtocol.decodeTag(
+                EnakNfcProtocol.TNF_EXTERNAL_TYPE,
+                "cz.enak:cmd".toByteArray(),
+                byteArrayOf(9, 1)
             )
         )
     }
